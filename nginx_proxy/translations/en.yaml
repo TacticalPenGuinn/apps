@@ -24,6 +24,12 @@ configuration:
     name: Use SSL Backend
     description: >-
       If enabled, configure Nginx to use SSL to connect to backend.
+  http2:
+    name: HTTP/2
+    description: >-
+      Enable HTTP/2. Turn this off to mitigate the nginx2root HTTP/2 issues
+      until nginx 1.31.9 is available. HTTP/1.1 still works. This does not
+      disable HTTP/3; leave the HTTP/3 port empty as well.
   client_max_body_size_megabytes:
     name: Max body size (in MB)
     description: >-

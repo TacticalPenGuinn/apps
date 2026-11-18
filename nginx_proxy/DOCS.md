@@ -43,6 +43,7 @@ customize:
   default: "nginx_proxy_default*.conf"
   servers: "nginx_proxy/*.conf"
 cloudflare: false
+http2: true
 real_ip_from: []
 ```
 
@@ -83,17 +84,30 @@ This is so the `ip_ban_enabled` feature can be used and work correctly in /confi
 
 Enable this option to configure Nginx to connect with SSL to the backend when your `http` section uses the `ssl_certificate` or `ssl_key` options.
 
+### Option `http2` (optional)
+
+Enable HTTP/2 on the HTTPS server blocks. The default is `true`, which keeps the current configuration (`http2 on;`).
+
+Set this to `false` to write `http2 off;` into every HTTPS server block, including the default server that rejects unknown hostnames. Save the configuration and restart the app. Clients then use HTTP/1.1.
+
+This app installs nginx 1.30.6-r0 from Alpine 3.24. That release is in the range affected by the [nginx2root](https://xint.io/blog/nginx2root-remote-code-execution) issues fixed in nginx 1.31.9, which is not yet released. Turning HTTP/2 off is a temporary mitigation for CVE-2026-123007 and CVE-2026-123633, which both require HTTP/2. It does not address the other nginx2root issues.
+
+HTTP/3 is separate. CVE-2026-121810 applies when HTTP/3 is enabled and nginx proxies to a backend, which this app does. The `http2` option does not remove the QUIC listener or the `Alt-Svc` advertisement. HTTP/3 stays off unless the HTTP/3 (QUIC) UDP port is set. Leave that port empty until nginx 1.31.9 is available. If it is already set, clear it and restart.
+
 ### Option `real_ip_from` (optional)
 
 If specified, configures Nginx to use Proxy Protocol to get the Real Ip from an upstream load balancer; [for more information](https://docs.nginx.com/nginx/admin-guide/load-balancer/using-proxy-protocol/).
 
 ### Port `HTTP/3 (QUIC)` (optional)
 
-If specified, configures Nginx to use HTTP/3 with QUIC/UDP on this UDP port in addition to HTTP/2 and HTTP/1.1 on the TCP port; [for more information](https://nginx.org/en/docs/http/ngx_http_v3_module.html).
+If specified, configures Nginx to use HTTP/3 with QUIC/UDP on this UDP port in addition to HTTP/1.1 (and HTTP/2, when the `http2` option is enabled) on the TCP port; [for more information](https://nginx.org/en/docs/http/ngx_http_v3_module.html).
+
+Leave this port unset to keep HTTP/3 disabled. See the `http2` option for why that matters until nginx 1.31.9.
 
 ## Known issues and limitations
 
 - By default, port 80 is disabled in the app configuration in case the port is needed for other components or apps like `emulated_hue`.
+- nginx 1.30.6-r0 (Alpine 3.24) is affected by nginx2root. Set `http2` to `false`, and leave the HTTP/3 (QUIC) port unset, until the app ships nginx 1.31.9 or newer. See the `http2` option.
 - With HTTP/3 (QUIC), Nginx cannot forward the port of the address used by the client to Home Assistant (the `Host` and `X-Forwarded-Host` headers contain the hostname without port). If Home Assistant is reachable on a non-default port (anything other than 443), this breaks features which validate the request host and port against the configured external URL, such as the OAuth2 discovery endpoints used by MCP clients. Regular browser and app logins are not affected. To avoid this, use the default port 443 or disable HTTP/3.
 
 ## Troubleshooting

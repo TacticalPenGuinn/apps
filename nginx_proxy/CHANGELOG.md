@@ -1,5 +1,9 @@
 # Changelog
 
+## 4.6.0
+
+- Add an `http2` option (default on) so HTTP/2 can be disabled until nginx 1.31.9
+
 ## 4.5.1
 
 - Fix nginx failing to start when the client max body size option is present (`incompatible types for comparison` in the config template)
